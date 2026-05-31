@@ -4,7 +4,7 @@ const express = require('express');
 const path    = require('path');
 const fs      = require('fs');
 const db      = require('../db/pool');
-const { requireAdmin } = require('../middleware/auth');
+const { requireAdmin } = require('./auth');
 const { upload }       = require('../middleware/upload');
 
 const router = express.Router();
