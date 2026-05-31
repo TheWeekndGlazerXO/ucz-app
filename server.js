@@ -29,19 +29,19 @@ const uploadDir = path.join(__dirname, process.env.UPLOAD_DIR || 'public/uploads
 
 // ── Security middleware ──────────────────────────────────────
 app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
-      styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
-      fontSrc:     ["'self'", 'fonts.gstatic.com'],
-      imgSrc:      ["'self'", 'data:', 'blob:'],
-      objectSrc:   ["'self'"],                     // allows inline PDF viewer
-      frameSrc:    ["'self'", 'blob:'],
-      connectSrc: ["'self'"],
+    contentSecurityPolicy: {
+      directives: {
+        defaultSrc:  ["'self'"],
+        scriptSrc:   ["'self'", "'unsafe-inline'", "'unsafe-hashes'", "'unsafe-eval'"],
+        styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
+        fontSrc:     ["'self'", 'fonts.gstatic.com'],
+        imgSrc:      ["'self'", 'data:', 'blob:'],
+        objectSrc:   ["'self'"],
+        frameSrc:    ["'self'", 'blob:'],
+        connectSrc:  ["'self'"],
+      },
     },
-  },
-}));
+  }));
 
 const corsOrigins = process.env.CORS_ORIGINS
   ? process.env.CORS_ORIGINS.split(',').map(s => s.trim())
