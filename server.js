@@ -32,12 +32,13 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc:  ["'self'"],
-      scriptSrc:   ["'self'", "'unsafe-inline'"],  // inline JS in HTML pages
+      scriptSrc:   ["'self'", "'unsafe-inline'", "'unsafe-hashes'"],
       styleSrc:    ["'self'", "'unsafe-inline'", 'fonts.googleapis.com'],
       fontSrc:     ["'self'", 'fonts.gstatic.com'],
       imgSrc:      ["'self'", 'data:', 'blob:'],
       objectSrc:   ["'self'"],                     // allows inline PDF viewer
       frameSrc:    ["'self'", 'blob:'],
+      connectSrc: ["'self'"],
     },
   },
 }));
