@@ -1,0 +1,31 @@
+{
+    "name": "trinity-church-zambia",
+    "version": "1.0.0",
+    "description": "Trinity Church Lusaka — church website with brochures, news, links and hymn book",
+    "main": "server.js",
+    "scripts": {
+      "start": "node server.js",
+      "dev": "nodemon server.js",
+      "db:init": "psql $DATABASE_URL -f db/schema.sql",
+      "db:seed": "psql $DATABASE_URL -f db/seed.sql",
+      "db:reset": "psql $DATABASE_URL -c 'DROP TABLE IF EXISTS brochures,news_articles,useful_links,hymn_pages,admin_sessions CASCADE;' && npm run db:init"
+    },
+    "dependencies": {
+      "cookie-parser": "^1.4.6",
+      "cors": "^2.8.5",
+      "dotenv": "^16.4.5",
+      "express": "^4.19.2",
+      "express-rate-limit": "^7.3.1",
+      "helmet": "^7.1.0",
+      "multer": "^1.4.5-lts.1",
+      "pg": "^8.12.0",
+      "sharp": "^0.33.4",
+      "uuid": "^10.0.0"
+    },
+    "devDependencies": {
+      "nodemon": "^3.1.4"
+    },
+    "engines": {
+      "node": ">=18.0.0"
+    }
+  }

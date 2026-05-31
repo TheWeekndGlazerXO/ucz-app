@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="theme-color" content="#1A1814"/>
+  <title>Trinity Church Zambia</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="/css/style.css"/>
+</head>
+<body>
+
+<!-- ── TOP BAR ─────────────────────────────────────────────── -->
+<header class="top-bar" role="banner">
+  <div class="site-title">Trinity Church</div>
+  <div class="site-sub">Lusaka, Zambia</div>
+  <nav class="tab-row" role="tablist" aria-label="Site sections">
+    <button class="tab-btn active" role="tab" aria-selected="true"  aria-controls="tab-brochure" id="tbtn-brochure" onclick="switchTab('brochure')">Brochure</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-news"     id="tbtn-news"     onclick="switchTab('news')">News</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-links"    id="tbtn-links"    onclick="switchTab('links')">Links</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-hymns"    id="tbtn-hymns"    onclick="switchTab('hymns')">Hymn Book</button>
+    <button class="tab-btn"        role="tab" aria-selected="false" aria-controls="tab-admin"    id="tbtn-admin"    onclick="switchTab('admin')">Admin</button>
+  </nav>
+</header>
+
+<main id="main-content">
+
+  <!-- ── BROCHURE ───────────────────────────────────────────── -->
+  <section id="tab-brochure" class="panel active" role="tabpanel" aria-labelledby="tbtn-brochure">
+    <div class="hero-bar">
+      <h1>Sunday Brochure</h1>
+      <p>Weekly order of service</p>
+    </div>
+    <div class="date-pill-row" id="brochure-pills" aria-label="Select a brochure date"></div>
+    <div class="brochure-viewer" id="brochure-viewer">
+      <div class="empty-state" aria-live="polite">
+        <div class="empty-icon" aria-hidden="true">📋</div>
+        <p>Loading brochures…</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── NEWS ──────────────────────────────────────────────── -->
+  <section id="tab-news" class="panel" role="tabpanel" aria-labelledby="tbtn-news">
+    <div class="panel-header">
+      <h2>Church News</h2>
+    </div>
+    <div id="news-list" aria-live="polite"></div>
+  </section>
+
+  <!-- ── LINKS ─────────────────────────────────────────────── -->
+  <section id="tab-links" class="panel" role="tabpanel" aria-labelledby="tbtn-links">
+    <div class="panel-header">
+      <h2>Useful Links</h2>
+      <p class="panel-sub">Resources curated by Trinity Church</p>
+    </div>
+    <div id="links-list" aria-live="polite"></div>
+  </section>
+
+  <!-- ── HYMN BOOK ──────────────────────────────────────────── -->
+  <section id="tab-hymns" class="panel" role="tabpanel" aria-labelledby="tbtn-hymns">
+    <div class="panel-header">
+      <h2>Hymn Book</h2>
+      <p class="panel-sub">Tap a page to open it full screen</p>
+    </div>
+    <div class="hymn-grid" id="hymn-grid" aria-live="polite"></div>
+  </section>
+
+  <!-- ── ADMIN ──────────────────────────────────────────────── -->
+  <section id="tab-admin" class="panel" role="tabpanel" aria-labelledby="tbtn-admin">
+
+    <!-- Gate -->
+    <div id="admin-gate" class="admin-gate">
+      <div class="lock-icon" aria-hidden="true">🔒</div>
+      <h2>Admin Access</h2>
+      <p>Enter the password to manage church content</p>
+      <div class="field">
+        <label for="admin-pw">Password</label>
+        <input type="password" id="admin-pw" autocomplete="current-password"
+               onkeydown="if(event.key==='Enter')login()"/>
+      </div>
+      <button class="btn btn-full" onclick="login()">Enter</button>
+      <p id="pw-error" class="error-msg" role="alert" hidden>Incorrect password</p>
+    </div>
+
+    <!-- Panel (shown after login) -->
+    <div id="admin-panel" hidden>
+      <div class="admin-panel-header">
+        <h2>Manage Content</h2>
+        <button class="btn btn-sm btn-outline" onclick="logout()">Lock</button>
+      </div>
+
+      <!-- ── BROCHURES ── -->
+      <div class="section-card">
+        <h3>📋 Brochures</h3>
+        <p class="section-hint">Upload the weekly PDF or image, then pick the date it's for.</p>
+        <div class="field">
+          <label for="b-date">Service date</label>
+          <input type="date" id="b-date"/>
+        </div>
+        <div class="field">
+          <label>PDF or image file</label>
+          <div class="file-drop" onclick="document.getElementById('b-file').click()" role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('b-file').click()" aria-label="Choose brochure file">
+            <span class="file-drop-icon" aria-hidden="true">📎</span>
+            <span id="b-file-label">Tap to choose PDF or image</span>
+          </div>
+          <input type="file" id="b-file" accept=".pdf,image/*" hidden onchange="previewFile(this,'b-preview','b-file-label')"/>
+          <img id="b-preview" class="file-preview" hidden alt="Brochure preview"/>
+        </div>
+        <button class="btn btn-full" onclick="saveBrochure()">Save Brochure</button>
+
+        <div class="divider"></div>
+        <h4 class="list-heading">Saved brochures</h4>
+        <div id="admin-brochure-list"></div>
+      </div>
+
+      <!-- ── NEWS ── -->
+      <div class="section-card">
+        <h3>📰 News Articles</h3>
+        <div class="field">
+          <label for="n-title">Title</label>
+          <input type="text" id="n-title" placeholder="Article title"/>
+        </div>
+        <div class="field">
+          <label for="n-date">Date</label>
+          <input type="date" id="n-date"/>
+        </div>
+        <div class="field">
+          <label for="n-content">Content</label>
+          <textarea id="n-content" placeholder="Write the article here…"></textarea>
+        </div>
+        <div class="field">
+          <label>Cover image <span class="optional">(optional)</span></label>
+          <div class="file-drop" onclick="document.getElementById('n-file').click()" role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('n-file').click()" aria-label="Choose cover image">
+            <span class="file-drop-icon" aria-hidden="true">🖼</span>
+            <span id="n-file-label">Tap to choose an image</span>
+          </div>
+          <input type="file" id="n-file" accept="image/*" hidden onchange="previewFile(this,'n-preview','n-file-label')"/>
+          <img id="n-preview" class="file-preview" hidden alt="Cover image preview"/>
+        </div>
+        <button class="btn btn-full" onclick="saveNews()">Publish Article</button>
+
+        <div class="divider"></div>
+        <h4 class="list-heading">Published articles</h4>
+        <div id="admin-news-list"></div>
+      </div>
+
+      <!-- ── LINKS ── -->
+      <div class="section-card">
+        <h3>🔗 Useful Links</h3>
+        <div class="field">
+          <label for="l-name">Display name</label>
+          <input type="text" id="l-name" placeholder="e.g. YouVersion Bible"/>
+        </div>
+        <div class="field">
+          <label for="l-url">URL</label>
+          <input type="url" id="l-url" placeholder="https://…"/>
+        </div>
+        <div class="field">
+          <label for="l-desc">Description <span class="optional">(optional)</span></label>
+          <input type="text" id="l-desc" placeholder="Short description"/>
+        </div>
+        <button class="btn btn-full" onclick="saveLink()">Add Link</button>
+
+        <div class="divider"></div>
+        <h4 class="list-heading">Saved links</h4>
+        <div id="admin-links-list"></div>
+      </div>
+
+      <!-- ── HYMNS ── -->
+      <div class="section-card">
+        <h3>🎵 Hymn Book Pages</h3>
+        <div class="field">
+          <label for="h-label">Page / hymn label</label>
+          <input type="text" id="h-label" placeholder="e.g. Hymn 42 – How Great Thou Art"/>
+        </div>
+        <div class="field">
+          <label>Image or PDF</label>
+          <div class="file-drop" onclick="document.getElementById('h-file').click()" role="button" tabindex="0"
+               onkeydown="if(event.key==='Enter'||event.key===' ')document.getElementById('h-file').click()" aria-label="Choose hymn page file">
+            <span class="file-drop-icon" aria-hidden="true">📄</span>
+            <span id="h-file-label">Tap to choose image or PDF</span>
+          </div>
+          <input type="file" id="h-file" accept="image/*,.pdf" hidden onchange="previewFile(this,'h-preview','h-file-label')"/>
+          <img id="h-preview" class="file-preview" hidden alt="Hymn page preview"/>
+        </div>
+        <button class="btn btn-full" onclick="saveHymn()">Add to Hymn Book</button>
+
+        <div class="divider"></div>
+        <h4 class="list-heading">Pages</h4>
+        <div id="admin-hymn-list"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<!-- ── VIEWER MODAL ──────────────────────────────────────────── -->
+<div id="viewer-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-label="Content viewer" hidden>
+  <div class="modal-header">
+    <span class="modal-title" id="modal-title"></span>
+    <button class="modal-close" onclick="closeModal()" aria-label="Close viewer">✕</button>
+  </div>
+  <div class="modal-body" id="modal-body"></div>
+</div>
+
+<!-- ── TOAST ─────────────────────────────────────────────────── -->
+<div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+<script src="/js/app.js"></script>
+</body>
+</html>

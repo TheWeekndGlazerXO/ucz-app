@@ -1,0 +1,11 @@
+# Environment
+.env
+
+# Uploads (user files — these live on the server, not in git)
+public/uploads/
+
+# Dependencies
+node_modules/
+
+# OS
+.DS_Store
