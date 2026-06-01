@@ -1,142 +1,75 @@
 'use strict';
 
 const express = require('express');
-const path    = require('path');
-const fs      = require('fs');
+const crypto  = require('crypto');
 const db      = require('../db/pool');
 const { requireAdmin } = require('./auth');
-const { upload }       = require('./upload');
 
 const router = express.Router();
 
-function fileType(mimetype) {
-  return mimetype === 'application/pdf' ? 'pdf' : 'image';
-}
+// GET /api/admin/status
+router.get('/status', async (req, res) => {
+  const token = req.cookies && req.cookies.tc_session;
+  if (!token) return res.json({ authenticated: false });
 
-function toPublicPath(filePath) {
-  // Convert absolute disk path to a web-relative path under /uploads/
-  const base = path.join(__dirname, '..', process.env.UPLOAD_DIR || 'public/uploads');
-  const rel  = path.relative(base, filePath);
-  return `/uploads/${rel.replace(/\\/g, '/')}`;
-}
-
-// GET /api/brochures
-// Returns all brochures ordered by service_date ascending.
-router.get('/', async (_req, res, next) => {
   try {
     const { rows } = await db.query(
-      `SELECT id, title, service_date, file_path, file_type, original_name, file_size, created_at
-       FROM brochures
-       ORDER BY service_date ASC`
+      `SELECT token FROM admin_sessions WHERE token = $1 AND expires_at > now()`,
+      [token]
     );
-    res.json(rows);
-  } catch (err) {
-    next(err);
+    res.json({ authenticated: rows.length > 0 });
+  } catch {
+    res.json({ authenticated: false });
   }
 });
 
-// GET /api/brochures/next
-// Returns the single brochure whose service_date >= today (or the most recent).
-router.get('/next', async (_req, res, next) => {
+// POST /api/admin/login
+router.post('/login', async (req, res) => {
+  const { password } = req.body;
+  if (!password) return res.status(400).json({ error: 'Password required' });
+
+  const correct = process.env.ADMIN_PASSWORD;
+  if (!correct || password !== correct) {
+    return res.status(401).json({ error: 'Incorrect password' });
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const hours = process.env.SESSION_HOURS || '8';
+
   try {
-    const { rows } = await db.query(
-      `SELECT id, title, service_date, file_path, file_type, original_name
-       FROM brochures
-       WHERE service_date >= CURRENT_DATE
-       ORDER BY service_date ASC
-       LIMIT 1`
+    await db.query(
+      `INSERT INTO admin_sessions (token, expires_at)
+       VALUES ($1, now() + ($2 || ' hours')::INTERVAL)`,
+      [token, hours]
     );
 
-    if (rows.length) return res.json(rows[0]);
+    res.cookie('tc_session', token, {
+      httpOnly: true,
+      secure:   process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge:   parseInt(hours) * 60 * 60 * 1000,
+    });
 
-    // Fall back to the most recent past brochure
-    const fallback = await db.query(
-      `SELECT id, title, service_date, file_path, file_type, original_name
-       FROM brochures
-       ORDER BY service_date DESC
-       LIMIT 1`
-    );
-    res.json(fallback.rows[0] || null);
+    res.json({ ok: true });
   } catch (err) {
-    next(err);
+    res.status(500).json({ error: 'Login failed' });
   }
 });
 
-// GET /api/brochures/:id
-router.get('/:id', async (req, res, next) => {
-  try {
-    const { rows } = await db.query(
-      `SELECT * FROM brochures WHERE id = $1`,
-      [req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    next(err);
+// POST /api/admin/logout
+router.post('/logout', (req, res) => {
+  const token = req.cookies && req.cookies.tc_session;
+  if (token) {
+    db.query('DELETE FROM admin_sessions WHERE token = $1', [token]).catch(() => {});
   }
+  res.clearCookie('tc_session');
+  res.json({ ok: true });
 });
 
-// POST /api/brochures   [admin only]
-// Multipart: field `file` (PDF or image), body fields: title, service_date
-router.post('/', requireAdmin, upload('brochures').single('file'), async (req, res, next) => {
+// DELETE /api/admin/sessions  [admin only] — clear all expired sessions
+router.delete('/sessions', requireAdmin, async (req, res, next) => {
   try {
-    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
-    const { title = '', service_date } = req.body;
-    if (!service_date) return res.status(400).json({ error: 'service_date is required' });
-
-    const webPath = toPublicPath(req.file.path);
-    const type    = fileType(req.file.mimetype);
-
-    const { rows } = await db.query(
-      `INSERT INTO brochures (title, service_date, file_path, file_type, original_name, file_size)
-       VALUES ($1, $2, $3, $4, $5, $6)
-       RETURNING *`,
-      [title, service_date, webPath, type, req.file.originalname, req.file.size]
-    );
-
-    res.status(201).json(rows[0]);
-  } catch (err) {
-    // Clean up uploaded file on DB error
-    if (req.file) fs.unlink(req.file.path, () => {});
-    next(err);
-  }
-});
-
-// PATCH /api/brochures/:id  [admin only]  — update title / date only
-router.patch('/:id', requireAdmin, async (req, res, next) => {
-  try {
-    const { title, service_date } = req.body;
-    const { rows } = await db.query(
-      `UPDATE brochures
-       SET title        = COALESCE($1, title),
-           service_date = COALESCE($2, service_date)
-       WHERE id = $3
-       RETURNING *`,
-      [title || null, service_date || null, req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Not found' });
-    res.json(rows[0]);
-  } catch (err) {
-    next(err);
-  }
-});
-
-// DELETE /api/brochures/:id  [admin only]
-router.delete('/:id', requireAdmin, async (req, res, next) => {
-  try {
-    const { rows } = await db.query(
-      `DELETE FROM brochures WHERE id = $1 RETURNING file_path`,
-      [req.params.id]
-    );
-    if (!rows.length) return res.status(404).json({ error: 'Not found' });
-
-    // Remove file from disk
-    const diskPath = path.join(
-      __dirname, '..', 'public',
-      rows[0].file_path.replace(/^\/uploads\//, 'uploads/')
-    );
-    fs.unlink(diskPath, () => {});
-
+    await db.query('DELETE FROM admin_sessions WHERE expires_at < now()');
     res.json({ ok: true });
   } catch (err) {
     next(err);
